@@ -1,0 +1,168 @@
+for waitx
+The fields ctime (CREATION TIME), etime (END TIME), rtime (calculates RUN TIME) & iotime (IO TIME) fields have been added to proc structure of proc.h file
+proc.c contains the actual waitx() system call:
+	i created a system call waitx as per requirements and created a user program time,
+	 which creates two integer variables wtime and rtime and asssigns wait time and rtime of current process to it.
+
+for ps:
+a new user program ps is created and function cps is added in proc.c file while iterates over all processes and prints info about active processes.
+for this a new file ps.c created
+_ps is added in make file
+now calling cps fun in pro.c
+declared sps syscall user.h,user,S,syscall.h,syscall.c,sysproc.c,defs.h
+
+
+Task 2 - Scheduling techniques
+
+For testing these scheduling algorithms, i created a user progeam bench in bench.c 
+which creates 10 child processes and class wait() for each process. after each process is completed it prints out the total time taken. 
+
+Default RR:
+	this is the default scheduling algorithm
+	After tunning bench user program: 
+		time for 10 processes.
+
+		Total Time: 2008
+		Total Time: 2427
+		Total Time: 2766
+		Total Time: 3050
+		Total Time: 3274
+		Total Time: 3287
+		Total Time: 3367
+		Total Time: 3382
+		Total Time: 3425
+		Total Time: 3430
+		Process with PID=3 has
+		RunTime=6
+		Num_Run=25
+		Total Time: 3435
+
+
+
+1. First come - First Served (FCFS)
+	For this , Iterate through the process table to find the process with min creation time 
+	Check if the process found is runnable, if it is, execute it
+
+	After tunning bench user program: 
+		time for 10 processes.
+
+		Total Time: 1639
+		Total Time: 1709
+		Total Time: 2936
+		Total Time: 2974
+		Total Time: 3894
+		Total Time: 3946
+		Total Time: 4555
+		Total Time: 4604
+		Total Time: 4902
+		Total Time: 4954
+
+		Process with PID=3 has
+		RunTime=4
+		Num_Run=17
+		Total Time: 4960
+
+
+
+
+
+
+2.Priority Based Scheduler (PBS)
+	it Assigns default priority 60 to each entering process
+and Finds the minimum priority process by iterating through the process table (min priority number translates to maximum preference)
+o implement RR for same priority processes, iterate through all the processes again. Whichever has same priority as the min priority found, execute that. yield() is enabled for PBS in proc.c() so the process gets yielded out and if any other process with same priority is there, it gets executed next.
+set_priority() calls yield() when the priority of a process becomes lower than its old priority.
+
+
+	After tunning bench user program: 
+		time for 10 processes.
+
+		Total Time: 1894
+		Total Time: 1922
+		Total Time: 1966
+		Total Time: 2002
+		Total Time: 2125
+		Total Time: 2392
+		Total Time: 2660
+		Total Time: 3056
+		Total Time: 3465
+		Total Time: 3997
+		Process with PID=3 has
+		RunTime=11
+		Num_Run=35
+		Total Time: 4002
+
+
+
+
+3.Multi Level Feedback Queues (MLFQ)
+	declared 5 queues with different priorities based on time slices, i.e. 1, 2, 4, 8, 16 timer ticks.
+
+    These queues contain runnable processes only.
+    The add process to queue and remove process from queue functions take arguments of the process and queue number and make appropriate changes in the array(pop and push).
+    We add a process in a queue in userinit() and fork() and kill() functions in proc.c i.e. wherever the process state becomes runnable.
+    Ageing is implemented by iterating through queues 1-4 and checking if any process has exceeded the age limit and subsequently moving it up in the queues.
+
+    Next, we iterate over all the queues in order, increase the tick associated with that process and its number of runs.
+    In the trap file, we check if the curr_ticks of the process >= permissible ticks of the queue. If that's the case, we call yield and push the process to the next queue. Otherwise increment the ticks and let the process remain in queue.
+
+    	After tunning bench user program: 
+		time for 10 processes.
+
+
+		Total Time: 2053
+		Total Time: 2547
+		Total Time: 2776
+		Total Time: 3142
+		Total Time: 3423
+		Total Time: 3466
+		Total Time: 3476
+		Total Time: 3613
+		Total Time: 3661
+		Total Time: 3697
+		Process with PID=3 has
+		RunTime=6
+		Num_Run=21
+		Queue no=3
+		The ticks received in each queue are:
+		0: 8
+		1: 2
+		2: 4
+		3: 13
+		4: 0
+		Total Time: 3709
+
+
+Comparision of these scheduling algorithms
+
+based on the time taken by these algorithms, raking (in least time taking algos)
+
+1.RR
+2.MLFQ
+3.PBS
+4.FCFS
+
+
+Conclusions:
+1. FCFS gives the worst performance as it has the highest endtime - creationtime
+(wtime + rtime).
+2. RR, PBS, and MLFQ give somewhat similar results.
+3. RR works slightly better than PBS and MLFQ.
+
+INFERENCE:
+1. RR
+Round Robin performed the best​ as all processes regardless of type (IO or CPUintensive) were given equal priority as they were yielded after every tick. This waythe I/O intensive processes didn’t have to wait for CPU intensive processes to finish(Convoy effect).
+
+2.FCFS
+FCFS performed the worst​ as CPU intensive programs came first and so were
+served first. The I/O intensive programs had to wait needlessly despite having shortCPU burst times.
+
+3. PBS
+For Priority based Scheduling the I/O intensive processes received lower priority
+(more preference), so they were executed before CPU intensive processes whenrunnable.
+Note: Processes could be assigned priority differently and in that case the outcome would vary.
+
+4. MLFQ
+In Multilevel Feedback Queue Scheduling, I/O intensive processes went to sleep
+(yield) frequently so they were retained in higher priority queues. CPU intensive
+processes took more ‘ticks’ and hence were constantly shifted down to lower priorityqueues. Hence, it performed better than FCFS.
